@@ -29,7 +29,7 @@ Plot.init(
     caretaker_id: {
       type: DataTypes.INTEGER,
       references: {
-        model: "Caretakers",
+        model: "caretakers",
         key: "id",
       }
     },
@@ -37,7 +37,7 @@ Plot.init(
     current_crop_id: {
       type: DataTypes.INTEGER,
       references:{
-        model: "Crops",
+        model: "crops",
         key: "id"
       }
     },
