@@ -4,27 +4,52 @@ import sequelize from "../config/sequelize.js";
 class Plot extends Model {
   public id!: number;
   public name!: string;
-  public size_acres!: number;
-  public caretaker!: string;
+  public acreage!: number;
+  public caretaker_id!: number;
+  public current_crop_id!: number;
+  public status !: number;
 }
+
 
 Plot.init(
   {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
     name: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    size_acres: {
-      type: DataTypes.FLOAT,
+    acreage: {
+      type: DataTypes.DECIMAL(10,2),
       allowNull: false,
     },
-    caretaker: {
-      type: DataTypes.STRING,
+    caretaker_id: {
+      type: DataTypes.INTEGER,
+      references: {
+        model: "Caretakers",
+        key: "id",
+      }
     },
+
+    current_crop_id: {
+      type: DataTypes.INTEGER,
+      references:{
+        model: "Crops",
+        key: "id"
+      }
+    },
+
+    status:{
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    }
   },
   {
     sequelize,
-    tableName: "Plots",
+    tableName: "plots",
     timestamps: true,
   }
 );
