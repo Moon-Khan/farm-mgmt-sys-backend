@@ -1,5 +1,5 @@
 import { Application, Request, Response } from "express";
-import Plot from "../models/plot.js";
+import Plot from "../models/plot";
 
 
 export default function initializeRoutes(app: Application) {

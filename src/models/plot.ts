@@ -1,5 +1,5 @@
 import { DataTypes, Model } from "sequelize";
-import sequelize from "../config/sequelize.js";
+import sequelize from "../config/sequelize";
 
 class Plot extends Model {
   public id!: number;
@@ -43,7 +43,7 @@ Plot.init(
     },
 
     status:{
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       allowNull: false,
     }
   },
