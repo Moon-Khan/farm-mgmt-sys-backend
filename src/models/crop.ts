@@ -31,13 +31,7 @@ Crop.init(
       type: DataTypes.TEXT,
       allowNull: true,
     },
-    sowing_date: {
-      type: DataTypes.DATE,
-      allowNull: false,
-    },
-    harvest_date: {
-      type: DataTypes.DATE,
-    },
+
   },
   {
     sequelize,
