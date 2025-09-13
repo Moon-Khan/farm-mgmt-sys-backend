@@ -83,7 +83,7 @@ class PlotService {
                 {
                     model: Crop,
                     as: "current_crop",
-                    attributes: ["id", "name", "planting_date", "harvest_date", "expected_yield"]
+                    attributes: ["id", "name", "variety", "description"]
                 }
             ];
 
