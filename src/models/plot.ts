@@ -7,7 +7,7 @@ class Plot extends Model {
   public acreage!: number;
   public caretaker_id!: number;
   public current_crop_id!: number;
-  public status !: number;
+  public status!: string;
 }
 
 
@@ -26,6 +26,7 @@ Plot.init(
       type: DataTypes.DECIMAL(10,2),
       allowNull: false,
     },
+
     caretaker_id: {
       type: DataTypes.INTEGER,
       references: {
@@ -33,7 +34,6 @@ Plot.init(
         key: "id",
       }
     },
-
     current_crop_id: {
       type: DataTypes.INTEGER,
       references:{
@@ -41,7 +41,6 @@ Plot.init(
         key: "id"
       }
     },
-
     status:{
       type: DataTypes.STRING,
       allowNull: false,
