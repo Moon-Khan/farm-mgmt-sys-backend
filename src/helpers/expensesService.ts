@@ -20,6 +20,27 @@ class ExpenseService {
         }
     }
 
+    async getExpensesByPlot(plotId: number): Promise<ServiceResponse<Expense[]>> {
+        try {
+            const expenses = await Expense.findAll({
+                where: {
+                    plot_id: plotId
+                }
+            });
+
+            return {
+                success: true,
+                data: expenses
+            };
+        } catch (error) {
+            console.error("Error in ExpenseService.getExpensesByPlot:", error);
+            return {
+                success: false,
+                errors: [error]
+            };
+        }
+    }
+
     async createExpense(expenseData: any): Promise<ServiceResponse<Expense>> {
         try {
             const expense = await Expense.create(expenseData);

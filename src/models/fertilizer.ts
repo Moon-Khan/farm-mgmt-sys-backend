@@ -21,7 +21,10 @@ Fertilizer.init(
     plot_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      
+      references: {
+        model: "plots",
+        key: "id",
+      }
     },
     crop_id: {
       type: DataTypes.INTEGER,

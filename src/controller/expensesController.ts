@@ -31,6 +31,33 @@ class ExpenseController extends BaseController {
         }
     }
 
+    // Get expenses by plot ID
+    async getExpensesByPlot(req: Request, res: Response): Promise<void> {
+        try {
+            const { plotId } = req.params;
+            const result = await ExpenseService.getExpensesByPlot(Number(plotId));
+
+            if (result.success && result.data) {
+                this.success(
+                    req,
+                    res,
+                    this.status.OK,
+                    result.data,
+                    "Plot expenses retrieved successfully"
+                );
+            } else {
+                this.error(
+                    req,
+                    res,
+                    this.status.BAD_REQUEST,
+                    result.message || "Failed to retrieve plot expenses"
+                );
+            }
+        } catch (error) {
+            this.handleServiceError(req, res, error, "Failed to retrieve plot expenses");
+        }
+    }
+
     // Create new expense record
     async createExpense(req: Request, res: Response): Promise<void> {
         try {
