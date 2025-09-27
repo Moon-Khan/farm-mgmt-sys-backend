@@ -6,6 +6,8 @@ import Fertilizer from "./fertilizer";
 import Pesticide from "./pesticide";
 import Irrigation from "./irrigation";
 import Expense from "./expense";
+import Reminder from "./Reminder";
+import User from "./user";
 
 // Plot Associations
 Plot.belongsTo(Caretaker, { foreignKey: "caretaker_id", as: "caretaker" });
@@ -45,6 +47,12 @@ Expense.belongsTo(Crop, { foreignKey: "crop_id", as: "crop" });
 Plot.hasMany(Expense, { foreignKey: "plot_id", as: "expenses" });
 Crop.hasMany(Expense, { foreignKey: "crop_id", as: "expenses" });
 
+// Reminder Associations
+Reminder.belongsTo(Plot, { foreignKey: "plot_id", as: "plot" });
+Reminder.belongsTo(Crop, { foreignKey: "crop_id", as: "crop" });
+Plot.hasMany(Reminder, { foreignKey: "plot_id", as: "reminders" });
+Crop.hasMany(Reminder, { foreignKey: "crop_id", as: "reminders" });
+
 export { 
   Plot, 
   Caretaker, 
@@ -53,5 +61,7 @@ export {
   Fertilizer, 
   Pesticide, 
   Irrigation,
-  Expense 
+  Expense,
+  Reminder,
+  User
 };

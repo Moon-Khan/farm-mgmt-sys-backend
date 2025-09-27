@@ -1,7 +1,11 @@
 import express from 'express';
+import { auth } from '../middleware/auth';
 import plotController from "../controller/plotController";
 
 const plots = express.Router();
+
+// Require auth for all plot routes
+plots.use(auth);
 
 // GET /v1/plots - Get all plots with pagination and filtering
 plots.get("/", (req, res) => plotController.getAllPlots(req, res));

@@ -285,26 +285,95 @@ export class ReportsController {
 
   // Internal helper methods
   private static async getFinancialDataInternal(timeframe: string, plot_id?: string) {
-    // Implementation similar to getFinancialOverview but returns data instead of response
-    const totalRevenue = 20400;
-    const totalExpenses = 10200;
-    const netProfit = 10200;
+    // Calculate date range based on timeframe
+    const now = new Date();
+    let startDate: Date;
+    if (timeframe === 'week') {
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    } else {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+
+    const whereClause: any = {
+      date: {
+        [Op.gte]: startDate,
+        [Op.lte]: now
+      }
+    };
+    if (plot_id) {
+      whereClause.plot_id = plot_id;
+    }
+
+    // Totals
+    const totalExpenses = (await Expense.sum('amount', { where: whereClause })) || 0;
+    const yieldRows = await CropLifecycle.findAll({
+      where: {
+        ...whereClause,
+        event_type: 'harvest',
+        yield_amount: { [Op.not]: null }
+      },
+      attributes: [[fn('SUM', col('yield_amount')), 'totalYield']]
+    });
+    const totalYield = (yieldRows[0]?.get('totalYield') as number) || 0;
+    const pricePerUnit = 2; // TODO: replace with real pricing when available
+    const totalRevenue = totalYield * pricePerUnit;
+    const netProfit = totalRevenue - totalExpenses;
+
+    // Monthly breakdown (group expenses and yields by month)
+    const expByMonth = await Expense.findAll({
+      where: whereClause,
+      attributes: [[fn('DATE_TRUNC', 'month', col('date')), 'month'], [fn('SUM', col('amount')), 'totalExpenses']],
+      group: [fn('DATE_TRUNC', 'month', col('date'))],
+      order: [[fn('DATE_TRUNC', 'month', col('date')), 'ASC']]
+    });
+    const yieldByMonth = await CropLifecycle.findAll({
+      where: {
+        ...whereClause,
+        event_type: 'harvest',
+        yield_amount: { [Op.not]: null }
+      },
+      attributes: [[fn('DATE_TRUNC', 'month', col('date')), 'month'], [fn('SUM', col('yield_amount')), 'totalYield']],
+      group: [fn('DATE_TRUNC', 'month', col('date'))],
+      order: [[fn('DATE_TRUNC', 'month', col('date')), 'ASC']]
+    });
+
+    // Index data by month ISO string
+    const toKey = (d: Date) => new Date(d).toISOString().slice(0, 7); // YYYY-MM
+    const monthName = (d: Date) => d.toLocaleString('en-US', { month: 'short' });
+
+    const expMap = new Map<string, number>();
+    expByMonth.forEach(r => {
+      const m = (r.get('month') as Date);
+      expMap.set(toKey(m), Number(r.get('totalExpenses')) || 0);
+    });
+    const yieldMap = new Map<string, number>();
+    yieldByMonth.forEach(r => {
+      const m = (r.get('month') as Date);
+      yieldMap.set(toKey(m), (Number(r.get('totalYield')) || 0) * pricePerUnit);
+    });
+
+    // Build a sorted list of months present in either dataset within range
+    const monthsSet = new Set<string>([...expMap.keys(), ...yieldMap.keys()]);
+    const months = Array.from(monthsSet).sort();
+    const monthlyBreakdown = months.map(key => {
+      const [year, month] = key.split('-').map(n => parseInt(n, 10));
+      const date = new Date(year, month - 1, 1);
+      const expenses = -(expMap.get(key) || 0); // negative to show outflow
+      const revenue = yieldMap.get(key) || 0;
+      const profit = revenue + expenses; // expenses negative
+      return { month: monthName(date), expenses, revenue, profit };
+    });
 
     return {
       summary: {
         totalRevenue,
         totalExpenses,
         netProfit,
-        revenueChange: '+12%',
-        expensesChange: '-5%',
-        profitChange: '+18%'
+        revenueChange: '+0%', // TODO: compute vs previous period
+        expensesChange: '+0%',
+        profitChange: '+0%'
       },
-      monthlyBreakdown: [
-        { month: 'Jan', expenses: -2400, revenue: 4800, profit: 2400 },
-        { month: 'Feb', expenses: -1800, revenue: 3600, profit: 1800 },
-        { month: 'Mar', expenses: -3200, revenue: 6400, profit: 3200 },
-        { month: 'Apr', expenses: -2800, revenue: 5600, profit: 2800 }
-      ]
+      monthlyBreakdown
     };
   }
 

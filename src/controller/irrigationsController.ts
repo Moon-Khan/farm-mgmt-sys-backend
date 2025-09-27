@@ -31,6 +31,33 @@ class IrrigationController extends BaseController {
         }
     }
 
+    // Get irrigations by plot ID
+    async getIrrigationsByPlot(req: Request, res: Response): Promise<void> {
+        try {
+            const { plotId } = req.params;
+            const result = await irrigationService.getIrrigationsByPlot(Number(plotId));
+
+            if (result.success && result.data) {
+                this.success(
+                    req,
+                    res,
+                    this.status.OK,
+                    result.data,
+                    "Plot irrigations retrieved successfully"
+                );
+            } else {
+                this.error(
+                    req,
+                    res,
+                    this.status.BAD_REQUEST,
+                    result.message || "Failed to retrieve plot irrigations"
+                );
+            }
+        } catch (error) {
+            this.handleServiceError(req, res, error, "Failed to retrieve plot irrigations");
+        }
+    }
+
     // Create new irrigation record
     async createIrrigation(req: Request, res: Response): Promise<void> {
         try {

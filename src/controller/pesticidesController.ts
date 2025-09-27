@@ -31,6 +31,33 @@ class PesticideController extends BaseController {
         }
     }
 
+    // Get pesticides by plot ID
+    async getPesticidesByPlot(req: Request, res: Response): Promise<void> {
+        try {
+            const { plotId } = req.params;
+            const result = await PesticideService.getPesticidesByPlot(Number(plotId));
+
+            if (result.success && result.data) {
+                this.success(
+                    req,
+                    res,
+                    this.status.OK,
+                    result.data,
+                    "Plot pesticides retrieved successfully"
+                );
+            } else {
+                this.error(
+                    req,
+                    res,
+                    this.status.BAD_REQUEST,
+                    result.message || "Failed to retrieve plot pesticides"
+                );
+            }
+        } catch (error) {
+            this.handleServiceError(req, res, error, "Failed to retrieve plot pesticides");
+        }
+    }
+
     // Create new pesticide record
     async createPesticide(req: Request, res: Response): Promise<void> {
         try {

@@ -20,8 +20,31 @@ class IrrigationService {
         }
     }
 
+    async getIrrigationsByPlot(plotId: number): Promise<ServiceResponse<Irrigation[]>> {
+        try {
+            const irrigations = await Irrigation.findAll({
+                where: {
+                    plot_id: plotId
+                }
+            });
+
+            return {
+                success: true,
+                data: irrigations
+            };
+        } catch (error) {
+            console.error("Error in IrrigationService.getIrrigationsByPlot:", error);
+            return {
+                success: false,
+                errors: [error]
+            };
+        }
+    }
+
     async createIrrigation(irrigationData: any): Promise<ServiceResponse<Irrigation>> {
         try {
+
+            console.log("irrigationData", irrigationData);  
             const irrigation = await Irrigation.create(irrigationData);
 
             return {

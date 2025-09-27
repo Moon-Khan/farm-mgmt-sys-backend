@@ -17,6 +17,7 @@ app.use(express.json());
 // Initialize routes
 initializeRoutes(app);
 
+
 // Database Sync + Server Start
 sequelize
   .sync({ alter: true }) // auto-create/update tables from models

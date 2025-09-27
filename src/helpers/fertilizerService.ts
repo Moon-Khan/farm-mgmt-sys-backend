@@ -20,8 +20,30 @@ class FertilizerService {
         }
     }
 
+    async getFertilizersByPlot(plotId: number): Promise<ServiceResponse<Fertilizer[]>> {
+        try {
+            const fertilizers = await Fertilizer.findAll({
+                where: {
+                    plot_id: plotId
+                }
+            });
+
+            return {
+                success: true,
+                data: fertilizers
+            };
+        } catch (error) {
+            console.error("Error in FertilizerService.getFertilizersByPlot:", error);
+            return {
+                success: false,
+                errors: [error]
+            };
+        }
+    }
+
     async createFertilizer(fertilizerData: any): Promise<ServiceResponse<Fertilizer>> {
         try {
+            
             const fertilizer = await Fertilizer.create(fertilizerData);
 
             return {

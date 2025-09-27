@@ -20,6 +20,27 @@ class PesticideService {
         }
     }
 
+    async getPesticidesByPlot(plotId: number): Promise<ServiceResponse<Pesticide[]>> {
+        try {
+            const pesticides = await Pesticide.findAll({
+                where: {
+                    plot_id: plotId
+                }
+            });
+
+            return {
+                success: true,
+                data: pesticides
+            };
+        } catch (error) {
+            console.error("Error in PesticideService.getPesticidesByPlot:", error);
+            return {
+                success: false,
+                errors: [error]
+            };
+        }
+    }
+
     async createPesticide(pesticideData: any): Promise<ServiceResponse<Pesticide>> {
         try {
             const pesticide = await Pesticide.create(pesticideData);
