@@ -13,7 +13,7 @@ declare global {
       user?: AuthUser;
     }
   }
-}
+} 
 
 export function auth(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization;

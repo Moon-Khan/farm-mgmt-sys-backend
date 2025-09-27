@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { BaseController } from "./basecontrotller";
 import { User } from "../models";
+import sequelize from "../config/sequelize";
 import { AuthUser } from "../middleware/auth";
 import bcrypt from "bcryptjs";
 import jwt, { SignOptions, Secret } from "jsonwebtoken";
@@ -30,14 +31,28 @@ class AuthController extends BaseController {
         return this.error(req, res, this.status.CONFLICT, "Email already in use");
       }
 
-      const hash = await bcrypt.hash(password, 10);
-      const created = await User.create({ name, email, password_hash: hash });
+      // Fail fast if JWT is misconfigured before touching DB
+      if (!process.env.JWT_SECRET) {
+        return this.error(req, res, this.status.INTERNAL_SERVER_ERROR, "Authentication is misconfigured");
+      }
 
-      const token = this.sign({ id: created.id, email: created.email, role: created.role });
-      return this.success(req, res, this.status.CREATED, {
-        token,
-        user: { id: created.id, name: created.name, email: created.email, role: created.role }
-      }, "Signup successful");
+      const t = await sequelize.transaction();
+      try {
+        const hash = await bcrypt.hash(password, 10);
+        const created = await User.create({ name, email, password_hash: hash }, { transaction: t });
+
+        // Attempt to sign token; if this throws, rollback to avoid persisting user
+        const token = this.sign({ id: created.id, email: created.email, role: created.role });
+
+        await t.commit();
+        return this.success(req, res, this.status.CREATED, {
+          token,
+          user: { id: created.id, name: created.name, email: created.email, role: created.role }
+        }, "Signup successful");
+      } catch (err) {
+        await t.rollback();
+        throw err;
+      }
     } catch (e) {
       this.handleServiceError(req, res, e, "Failed to signup");
     }
