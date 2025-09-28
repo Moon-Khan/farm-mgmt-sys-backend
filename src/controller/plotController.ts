@@ -7,6 +7,9 @@ class PlotController extends BaseController {
     // Get all plots with pagination and filtering
     async getAllPlots(req: Request, res: Response): Promise<void> {
         try {
+
+
+            console.log("===================> Fetching plots...");
             const pagination: any = this.getPaginationParams(req);
             const filters = {
                 status: req.query.status as string,
