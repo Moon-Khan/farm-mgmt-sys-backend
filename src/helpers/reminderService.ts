@@ -133,7 +133,9 @@ class ReminderService {
             const { Plot, Crop } = await import('../models');
             const activePlots = await Plot.findAll({
                 where: {
-                    status: 'active'
+                    // DB stores status values as 'Active', 'Fallow', 'harvested'
+                    // Generate reminders only for actively cultivated plots
+                    status: 'Active'
                 },
                 include: [{
                     model: Crop,
@@ -142,7 +144,8 @@ class ReminderService {
             });
 
             for (const plot of activePlots) {
-                const currentCrop = (plot as any).current_crop;
+                // Be resilient to alias casing differences ('current_crop' vs 'currentCrop')
+                const currentCrop = (plot as any).current_crop || (plot as any).currentCrop;
                 if (!currentCrop) continue;
 
                 // Generate reminders based on crop type and typical schedule
