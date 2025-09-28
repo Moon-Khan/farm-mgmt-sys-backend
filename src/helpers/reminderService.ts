@@ -129,27 +129,25 @@ class ReminderService {
         try {
             const createdReminders: Reminder[] = [];
             
-            // Get all active plots with crops
+            // Get all non-harvested plots that have a current crop set
             const { Plot, Crop } = await import('../models');
             const activePlots = await Plot.findAll({
                 where: {
-                    // DB stores status values as 'Active', 'Fallow', 'harvested'
-                    // Generate reminders only for actively cultivated plots
-                    status: 'Active'
-                },
-                include: [{
-                    model: Crop,
-                    as: 'current_crop'
-                }]
+                    // Support both legacy 'Active' and new statuses
+                    status: { [Op.in]: ['planting','harvested', 'growing'] },
+                    current_crop_id: { [Op.not]: null },
+                }
             });
 
             for (const plot of activePlots) {
-                // Be resilient to alias casing differences ('current_crop' vs 'currentCrop')
-                const currentCrop = (plot as any).current_crop || (plot as any).currentCrop;
-                if (!currentCrop) continue;
+                // Fetch crop by foreign key to avoid alias issues
+                const cropId = (plot as any).current_crop_id;
+                if (!cropId) continue;
+                const crop = await Crop.findByPk(cropId);
+                if (!crop) continue;
 
                 // Generate reminders based on crop type and typical schedule
-                const reminders = this.generateCropReminders(plot.id, currentCrop.id, currentCrop.name);
+                const reminders = this.generateCropReminders(plot.id, crop.id, (crop as any).name);
                 
                 for (const reminderData of reminders) {
                     const existingReminder = await Reminder.findOne({
