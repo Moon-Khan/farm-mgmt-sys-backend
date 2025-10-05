@@ -6,6 +6,8 @@ class PlotService {
     
     // Get all plots with pagination and filtering
     async getAllPlots(
+        userId?: number,
+        userRole?: string,
         pagination?: PaginationOptions,
         filters?: {
             status?: string;
@@ -15,6 +17,19 @@ class PlotService {
     ): Promise<ServiceResponse<{ items: Plot[]; total: number }>> {
         try {
             const where: any = {};
+            
+            // Only add user filtering if the user_id column exists in the database
+            // This handles the case where the column hasn't been added yet
+            if (userRole !== 'admin' && userId) {
+                try {
+                    // Check if user_id column exists by trying to use it in a query
+                    await Plot.findOne({ where: { user_id: userId }, limit: 1 });
+                    where.user_id = userId;
+                } catch (error) {
+                    // If column doesn't exist, don't filter by user_id
+                    console.log('user_id column not found, skipping user filtering');
+                }
+            }
             
             if (filters?.status) {
                 where.status = filters.status;
@@ -72,8 +87,21 @@ class PlotService {
     }
 
     // Get plot by ID with full details
-    async getPlotById(id: number): Promise<ServiceResponse<Plot>> {
+    async getPlotById(id: number, userId?: number, userRole?: string): Promise<ServiceResponse<Plot>> {
         try {
+            const where: any = { id };
+            
+            // Add user filtering for non-admin users (only if column exists)
+            if (userRole !== 'admin' && userId) {
+                try {
+                    await Plot.findOne({ where: { user_id: userId }, limit: 1 });
+                    where.user_id = userId;
+                } catch (error) {
+                    // If column doesn't exist, don't filter by user_id
+                    console.log('user_id column not found, skipping user filtering for getPlotById');
+                }
+            }
+
             const include = [
                 {
                     model: Caretaker,
@@ -87,7 +115,8 @@ class PlotService {
                 }
             ];
 
-            const plot = await Plot.findByPk(id, {
+            const plot = await Plot.findOne({
+                where,
                 include
             });
             
@@ -118,6 +147,7 @@ class PlotService {
         caretaker_id: number;
         current_crop_id: number;
         status: string;
+        user_id?: number; // Made optional to handle database migration
     }): Promise<ServiceResponse<Plot>> {
         try {
             // Validate required fields
@@ -136,7 +166,22 @@ class PlotService {
                 };
             }
 
-            const plot = await Plot.create(plotData);
+            // Check if user_id column exists before trying to use it
+            let finalPlotData = { ...plotData };
+            if (plotData.user_id) {
+                try {
+                    // Test if we can query with user_id
+                    await Plot.findOne({ where: { user_id: plotData.user_id }, limit: 1 });
+                    finalPlotData = plotData; // Include user_id if column exists
+                } catch (error) {
+                    // Remove user_id if column doesn't exist
+                    const { user_id, ...dataWithoutUserId } = plotData;
+                    finalPlotData = dataWithoutUserId;
+                    console.log('user_id column not found, creating plot without user_id');
+                }
+            }
+
+            const plot = await Plot.create(finalPlotData);
             
             return {
                 success: true,
@@ -159,6 +204,7 @@ class PlotService {
         caretaker_id: number;
         current_crop_id: number;
         status: string;
+        user_id?: number;
     }>): Promise<ServiceResponse<Plot>> {
         try {
             // Validate acreage if provided
@@ -169,19 +215,31 @@ class PlotService {
                 };
             }
 
+            // Check if user_id column exists before trying to use it in where clause
+            let whereClause: any = { id };
+            if (updateData.user_id) {
+                try {
+                    await Plot.findOne({ where: { user_id: updateData.user_id }, limit: 1 });
+                    whereClause.user_id = updateData.user_id;
+                } catch (error) {
+                    // Remove user_id from where clause if column doesn't exist
+                    console.log('user_id column not found, not using user filtering for update');
+                }
+            }
+
             const [affectedCount] = await Plot.update(updateData, {
-                where: { id }
+                where: whereClause
             });
 
             if (affectedCount === 0) {
                 return {
                     success: false,
-                    message: 'Plot not found'
+                    message: 'Plot not found or unauthorized'
                 };
             }
 
-            // Fetch the updated plot with associations
-            const updatedPlot = await this.getPlotById(id);
+            // Fetch the updated plot with associations and user filtering
+            const updatedPlot = await this.getPlotById(id, updateData.user_id, 'admin'); // Use admin role to bypass user filtering for the fetch
             return {
                 success: true,
                 data: updatedPlot.data,
@@ -197,16 +255,29 @@ class PlotService {
     }
 
     // Delete plot
-    async deletePlot(id: number): Promise<ServiceResponse<boolean>> {
+    async deletePlot(id: number, userId?: number, userRole?: string): Promise<ServiceResponse<boolean>> {
         try {
+            const where: any = { id };
+            
+            // Add user filtering for non-admin users (only if column exists)
+            if (userRole !== 'admin' && userId) {
+                try {
+                    await Plot.findOne({ where: { user_id: userId }, limit: 1 });
+                    where.user_id = userId;
+                } catch (error) {
+                    // If column doesn't exist, don't filter by user_id
+                    console.log('user_id column not found, skipping user filtering for delete');
+                }
+            }
+
             const affectedCount = await Plot.destroy({
-                where: { id }
+                where
             });
 
             if (affectedCount === 0) {
                 return {
                     success: false,
-                    message: 'Plot not found'
+                    message: 'Plot not found or unauthorized'
                 };
             }
 
@@ -226,12 +297,12 @@ class PlotService {
 
     // Get plots by status
     async getPlotsByStatus(status: string, pagination?: PaginationOptions): Promise<ServiceResponse<{ items: Plot[]; total: number }>> {
-        return this.getAllPlots(pagination, { status });
+        return this.getAllPlots(undefined, undefined, pagination, { status });
     }
 
     // Get plots by caretaker
     async getPlotsByCaretaker(caretakerId: number, pagination?: PaginationOptions): Promise<ServiceResponse<{ items: Plot[]; total: number }>> {
-        return this.getAllPlots(pagination, { caretaker_id: caretakerId });
+        return this.getAllPlots(undefined, undefined, pagination, { caretaker_id: caretakerId });
     }
 }
 
