@@ -17,7 +17,11 @@ class PlotController extends BaseController {
                 current_crop_id: req.query.current_crop_id ? parseInt(req.query.current_crop_id as string) : undefined
             };
 
-            const result = await PlotService.getAllPlots(pagination, filters);
+            // Add user context
+            const userId = req.user?.id;
+            const userRole = req.user?.role;
+
+            const result = await PlotService.getAllPlots(userId, userRole, pagination, filters);
 
             if (result.success && result.data) {
                 const meta = this.calculatePaginationMeta(
@@ -57,7 +61,11 @@ class PlotController extends BaseController {
                 return;
             }
 
-            const result = await PlotService.getPlotById(id);
+            // Add user context
+            const userId = req.user?.id;
+            const userRole = req.user?.role;
+
+            const result = await PlotService.getPlotById(id, userId, userRole);
 
             if (result.success && result.data) {
                 this.success(
@@ -83,7 +91,12 @@ class PlotController extends BaseController {
     // Create new plot
     async createPlot(req: Request, res: Response): Promise<void> {
         try {
-            const result = await PlotService.createPlot(req.body);
+            const plotData = {
+                ...req.body,
+                user_id: req.user?.id // Add the authenticated user's ID (optional for now)
+            };
+
+            const result = await PlotService.createPlot(plotData);
 
             if (result.success && result.data) {
                 this.success(
@@ -149,7 +162,11 @@ class PlotController extends BaseController {
                 return;
             }
 
-            const result = await PlotService.deletePlot(id);
+            // Add user context
+            const userId = req.user?.id;
+            const userRole = req.user?.role;
+
+            const result = await PlotService.deletePlot(id, userId, userRole);
 
             if (result.success) {
                 this.success(

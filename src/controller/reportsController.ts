@@ -114,7 +114,7 @@ export class ReportsController {
           },
           {
             model: CropLifecycle,
-            as: 'lifecycles',
+            as: 'croplifecycles',
             where: {
               event_type: 'harvest',
               yield_amount: { [Op.not]: null }
@@ -378,22 +378,195 @@ export class ReportsController {
   }
 
   private static async getCropYieldDataInternal(plot_id?: string) {
-    return {
-      cropPerformance: [
-        { crop: 'Wheat', acreage: 15.2, yieldPercentage: 85, target: 90, status: 'below_target' },
-        { crop: 'Corn', acreage: 12.8, yieldPercentage: 92, target: 85, status: 'above_target' },
-        { crop: 'Tomatoes', acreage: 8.5, yieldPercentage: 78, target: 80, status: 'below_target' }
-      ]
+    try {
+      const whereClause: any = {};
+      if (plot_id) {
+        whereClause.id = plot_id;
+      }
+
+      // Get plots with their current crops and lifecycle data
+      const plots = await Plot.findAll({
+        where: whereClause,
+        include: [
+          {
+            model: Crop,
+            as: 'current_crop',
+            attributes: ['id', 'name', 'variety']
+          },
+          {
+            model: CropLifecycle,
+            as: 'croplifecycles',
+            where: {
+              event_type: 'harvest',
+              yield_amount: { [Op.not]: null }
+            },
+            required: false,
+            attributes: ['yield_amount', 'yield_unit', 'date']
+          }
+        ]
+      });
+
+      // Calculate crop performance based on actual data
+      const cropPerformance = [];
+
+      for (const plot of plots) {
+        if (!plot.current_crop) continue;
+
+        // Calculate total actual yield for this crop
+        const totalYield = plot.croplifecycles?.reduce((sum: number, lifecycle: any) => {
+          return sum + (parseFloat(lifecycle.yield_amount as string) || 0);
+        }, 0) || 0;
+
+        // Calculate expected/target yield (this could be more sophisticated)
+        // For now, using a simple formula based on acreage and crop type
+        const expectedYieldPerAcre = this.getExpectedYieldPerAcre(plot.current_crop.name);
+        const expectedYield = expectedYieldPerAcre * parseFloat(plot.acreage as any);
+
+        // Calculate yield percentage
+        const yieldPercentage = expectedYield > 0 ? Math.round((totalYield / expectedYield) * 100) : 0;
+
+        // Determine status
+        let status = 'below_target';
+        if (yieldPercentage >= 90) {
+          status = 'above_target';
+        } else if (yieldPercentage >= 80) {
+          status = 'on_target';
+        }
+
+        cropPerformance.push({
+          crop: plot.current_crop.name,
+          acreage: parseFloat(plot.acreage as any),
+          yieldPercentage,
+          target: 90, // Could be configurable per crop type
+          status
+        });
+      }
+
+      return {
+        cropPerformance,
+        plotsData: plots
+      };
+    } catch (error) {
+      console.error('Error calculating crop yield data:', error);
+      // Return empty data structure on error
+      return {
+        cropPerformance: [],
+        plotsData: []
+      };
+    }
+  }
+
+  // Helper method to get expected yield per acre for different crop types
+  private static getExpectedYieldPerAcre(cropName: string): number {
+    const expectedYields: { [key: string]: number } = {
+      'Wheat': 40, // kg per acre
+      'Corn': 120,
+      'Rice': 60,
+      'Soybean': 35,
+      'Tomatoes': 25, // tons per acre for tomatoes
+      'Potatoes': 20,
+      'Cotton': 2, // bales per acre
+      'Sugarcane': 40 // tons per acre
     };
+
+    return expectedYields[cropName] || 50; // Default fallback
   }
 
   private static async getResourceEfficiencyDataInternal(timeframe: string, plot_id?: string) {
-    return {
-      metrics: [
-        { metric: 'Water Usage', status: '15% below target consumption', badge: 'Efficient', badgeColor: 'green' },
-        { metric: 'Fertilizer Usage', status: 'Within recommended range', badge: 'Normal', badgeColor: 'gray' },
-        { metric: 'Labor Efficiency', status: '20% improvement this quarter', badge: 'High', badgeColor: 'green' }
-      ]
-    };
+    try {
+      const now = new Date();
+      let startDate: Date;
+
+      if (timeframe === 'week') {
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      } else {
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      }
+
+      const whereClause: any = {
+        date: {
+          [Op.gte]: startDate,
+          [Op.lte]: now
+        }
+      };
+
+      if (plot_id) {
+        whereClause.plot_id = plot_id;
+      }
+
+      // Get actual resource usage data
+      const waterUsage = await Irrigation.sum('quantity', { where: whereClause }) || 0;
+      const fertilizerUsage = await Fertilizer.sum('quantity', { where: whereClause }) || 0;
+      const laborCosts = await Expense.sum('amount', {
+        where: {
+          ...whereClause,
+          type: 'labor'
+        }
+      }) || 0;
+
+      // Calculate efficiency metrics based on actual vs expected usage
+      const efficiencyMetrics = [];
+
+      // Water efficiency calculation
+      const avgWaterUsage = waterUsage / Math.max(1, (now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)); // Daily average
+      const waterTarget = 50; // liters per day per plot (configurable)
+      const waterEfficiency = avgWaterUsage < waterTarget ? 'Efficient' : avgWaterUsage < waterTarget * 1.2 ? 'Normal' : 'High Usage';
+
+      efficiencyMetrics.push({
+        metric: 'Water Usage',
+        status: `${avgWaterUsage < waterTarget ? 'Below' : avgWaterUsage < waterTarget * 1.2 ? 'Within' : 'Above'} target consumption (${avgWaterUsage.toFixed(1)}L/day avg)`,
+        badge: waterEfficiency === 'Efficient' ? 'Efficient' : waterEfficiency === 'Normal' ? 'Normal' : 'High',
+        badgeColor: waterEfficiency === 'Efficient' ? 'green' : waterEfficiency === 'Normal' ? 'gray' : 'red'
+      });
+
+      // Fertilizer efficiency calculation
+      const avgFertilizerUsage = fertilizerUsage / Math.max(1, (now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      const fertilizerTarget = 10; // kg per day per plot (configurable)
+      const fertilizerEfficiency = avgFertilizerUsage < fertilizerTarget ? 'Efficient' : avgFertilizerUsage < fertilizerTarget * 1.3 ? 'Normal' : 'High Usage';
+
+      efficiencyMetrics.push({
+        metric: 'Fertilizer Usage',
+        status: `${avgFertilizerUsage < fertilizerTarget ? 'Below' : avgFertilizerUsage < fertilizerTarget * 1.3 ? 'Within' : 'Above'} recommended range (${avgFertilizerUsage.toFixed(1)}kg/day avg)`,
+        badge: fertilizerEfficiency === 'Efficient' ? 'Efficient' : fertilizerEfficiency === 'Normal' ? 'Normal' : 'High',
+        badgeColor: fertilizerEfficiency === 'Efficient' ? 'green' : fertilizerEfficiency === 'Normal' ? 'gray' : 'red'
+      });
+
+      // Labor efficiency calculation (based on cost vs productivity)
+      const totalPlotArea = await Plot.sum('acreage', {
+        where: plot_id ? { id: plot_id } : {}
+      }) || 1;
+
+      const laborCostPerAcre = laborCosts / totalPlotArea;
+      const laborTarget = 100; // cost per acre (configurable)
+      const laborEfficiency = laborCostPerAcre < laborTarget * 0.8 ? 'High' : laborCostPerAcre < laborTarget * 1.2 ? 'Normal' : 'Low';
+
+      efficiencyMetrics.push({
+        metric: 'Labor Efficiency',
+        status: `Cost per acre: $${laborCostPerAcre.toFixed(0)} (${laborEfficiency === 'High' ? 'Better than target' : laborEfficiency === 'Normal' ? 'Within target' : 'Above target'})`,
+        badge: laborEfficiency,
+        badgeColor: laborEfficiency === 'High' ? 'green' : laborEfficiency === 'Normal' ? 'gray' : 'red'
+      });
+
+      return {
+        metrics: efficiencyMetrics,
+        rawData: {
+          waterUsage,
+          fertilizerUsage,
+          laborCosts,
+          totalPlotArea
+        }
+      };
+    } catch (error) {
+      console.error('Error calculating resource efficiency data:', error);
+      // Return default data on error
+      return {
+        metrics: [
+          { metric: 'Water Usage', status: 'Unable to calculate', badge: 'Unknown', badgeColor: 'gray' },
+          { metric: 'Fertilizer Usage', status: 'Unable to calculate', badge: 'Unknown', badgeColor: 'gray' },
+          { metric: 'Labor Efficiency', status: 'Unable to calculate', badge: 'Unknown', badgeColor: 'gray' }
+        ],
+        rawData: { waterUsage: 0, fertilizerUsage: 0, laborCosts: 0, totalPlotArea: 0 }
+      };
+    }
   }
 }
