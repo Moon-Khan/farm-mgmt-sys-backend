@@ -11,9 +11,10 @@ interface ReminderData {
 }
 
 class ReminderService {
-    async getAllReminders(): Promise<ServiceResponse<Reminder[]>> {
+    async getAllReminders(type?: 'watering' | 'fertilizer' | 'spray' | 'harvest'): Promise<ServiceResponse<Reminder[]>> {
         try {
             const reminders = await Reminder.findAll({
+                where: type ? { type } : undefined,
                 order: [['due_date', 'ASC']]
             });
 
@@ -52,7 +53,7 @@ class ReminderService {
         }
     }
 
-    async getUpcomingReminders(days: number = 7): Promise<ServiceResponse<Reminder[]>> {
+    async getUpcomingReminders(days: number = 7, type?: 'watering' | 'fertilizer' | 'spray' | 'harvest'): Promise<ServiceResponse<Reminder[]>> {
         try {
             const today = new Date();
             const futureDate = new Date();
@@ -64,7 +65,8 @@ class ReminderService {
                         [Op.gte]: today,
                         [Op.lte]: futureDate
                     },
-                    sent: false
+                    sent: false,
+                    ...(type ? { type } : {})
                 },
                 order: [["due_date", "ASC"]]
             });
