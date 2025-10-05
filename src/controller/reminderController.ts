@@ -9,7 +9,8 @@ class ReminderController extends BaseController {
     // Get all reminders
     async getAllReminders(req: Request, res: Response): Promise<void> {
         try {
-            const result = await ReminderService.getAllReminders();
+            const { type } = req.query as { type?: 'watering' | 'fertilizer' | 'spray' | 'harvest' };
+            const result = await ReminderService.getAllReminders(type);
 
             if (result.success && result.data) {
                 this.success(
@@ -62,8 +63,9 @@ class ReminderController extends BaseController {
     // Get upcoming reminders (next 7 days by default)
     async getUpcomingReminders(req: Request, res: Response): Promise<void> {
         try {
+            const { type } = req.query as { type?: 'watering' | 'fertilizer' | 'spray' | 'harvest' };
             const days = req.query.days ? Number(req.query.days) : 7;
-            const result = await ReminderService.getUpcomingReminders(days);
+            const result = await ReminderService.getUpcomingReminders(days, type);
 
             if (result.success && result.data) {
                 this.success(
@@ -146,8 +148,9 @@ class ReminderController extends BaseController {
 
             if (result.success && result.data) {
                 // Send emails for each created reminder (non-blocking best-effort)
+                const toEmail = req.user?.email; // may be undefined for cronAuth
                 Promise.all(
-                    result.data.map(r => NotificationService.sendReminderEmail(r).catch(err => {
+                    result.data.map(r => NotificationService.sendReminderEmail(r, toEmail).catch(err => {
                         console.error("Failed to send reminder email for", r?.id, err);
                     }))
                 ).catch(() => {});
