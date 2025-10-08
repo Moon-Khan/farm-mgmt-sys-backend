@@ -10,11 +10,15 @@ import Reminder from "./Reminder";
 import User from "./user";
 
 // Plot Associations
-Plot.belongsTo(Caretaker, { foreignKey: "caretaker_id", as: "caretaker" });
+// Plot.belongsTo(Caretaker, { foreignKey: "caretaker_id", as: "caretaker" }); // Removed - caretaker_id now stores name directly
 Plot.belongsTo(Crop, { foreignKey: "current_crop_id", as: "current_crop" });
 
+// User Associations (temporarily disabled)
+// Plot.belongsTo(User, { foreignKey: "user_id", as: "owner" }); // Temporarily disabled
+// User.hasMany(Plot, { foreignKey: "user_id", as: "plots" }); // Temporarily disabled
+
 // Reverse associations
-Caretaker.hasMany(Plot, { foreignKey: "caretaker_id", as: "plots" });
+// Caretaker.hasMany(Plot, { foreignKey: "caretaker_id", as: "plots" }); // Removed - caretaker_id now stores name directly
 Crop.hasMany(Plot, { foreignKey: "current_crop_id", as: "current_plots" });
 
 // CropLifecycle Associations

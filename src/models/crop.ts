@@ -4,8 +4,8 @@ import sequelize from "../config/sequelize";
 class Crop extends Model {
   public id!: number;
   public name!: string;
-  public variety!: string;
-  public description!: string;
+  public nameUrdu!: string;
+
 }
 
 Crop.init(
@@ -19,14 +19,11 @@ Crop.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    variety: {
+    name_urdu: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    description: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-    },
+
   },
   {
     sequelize,

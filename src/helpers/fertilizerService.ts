@@ -43,6 +43,8 @@ class FertilizerService {
 
     async createFertilizer(fertilizerData: any): Promise<ServiceResponse<Fertilizer>> {
         try {
+
+            console.log("Fertilizer data:", fertilizerData);    
             
             const fertilizer = await Fertilizer.create(fertilizerData);
 

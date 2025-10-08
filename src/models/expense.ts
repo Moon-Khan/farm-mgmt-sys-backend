@@ -4,7 +4,6 @@ import sequelize from "../config/sequelize";
 class Expense extends Model {
   public id!: number;
   public plot_id!: number;
-  public crop_id!: number;
   public type!: string;
   public amount!: number;
   public date!: Date;
@@ -23,14 +22,6 @@ Expense.init(
       allowNull: false,
       references: {
         model: "plots",
-        key: "id",
-      }
-    },
-    crop_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: "crops",
         key: "id",
       }
     },

@@ -1,5 +1,5 @@
-// controllers/CropController.ts
-import { BaseController } from "./basecontrotller";
+// controllers/expensesController.ts
+import { BaseController } from "./basecontroller";
 import ExpenseService from "../helpers/expensesService";
 import { Request, Response } from "express";
 

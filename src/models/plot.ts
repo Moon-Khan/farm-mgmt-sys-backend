@@ -6,10 +6,13 @@ class Plot extends Model {
   public id!: number;
   public name!: string;
   public acreage!: number;
-  public caretaker_id!: number;
+  public caretaker_name!: string; // Changed to string to store caretaker name directly
   public current_crop_id!: number;
   public user_id!: number; // Add this field
   public status!: string;
+  public planted_date?: Date;
+  public expected_harvest_date?: Date;
+  public is_active!: boolean; // Soft delete field
 
   // Relationship properties
   public current_crop?: any;
@@ -32,12 +35,9 @@ Plot.init(
       type: DataTypes.DECIMAL(10,2),
       allowNull: false,
     },
-    caretaker_id: {
-      type: DataTypes.INTEGER,
-      references: {
-        model: "caretakers",
-        key: "id",
-      }
+    caretaker_name: {
+      type: DataTypes.STRING, // Changed to STRING to store caretaker name directly
+      allowNull: false,
     },
     current_crop_id: {
       type: DataTypes.INTEGER,
@@ -50,6 +50,14 @@ Plot.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    planted_date: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    expected_harvest_date: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
     user_id: {
       type: DataTypes.INTEGER,
       allowNull: true, // Temporarily allow null for existing data
@@ -57,6 +65,11 @@ Plot.init(
         model: "users",
         key: "id",
       }
+    },
+    is_active: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true, // Default to active
     },
   },
   {

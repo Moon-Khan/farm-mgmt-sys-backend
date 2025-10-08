@@ -1,5 +1,5 @@
 // controllers/ReminderController.ts
-import { BaseController } from "./basecontrotller";
+import { BaseController } from "./basecontroller";
 import ReminderService from "../helpers/reminderService";
 import NotificationService from "../helpers/notificationService";
 import { Request, Response } from "express";

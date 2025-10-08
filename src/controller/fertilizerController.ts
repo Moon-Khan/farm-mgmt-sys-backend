@@ -1,5 +1,5 @@
-// controllers/CropController.ts
-import { BaseController } from "./basecontrotller";
+// controllers/fertilizerController.ts
+import { BaseController } from "./basecontroller";
 import FertilizerService from "../helpers/fertilizerService";
 import { Request, Response } from "express";
 

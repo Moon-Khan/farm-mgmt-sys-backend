@@ -4,7 +4,6 @@ import sequelize from "../config/sequelize";
 class Pesticide extends Model {
   public id!: number;
   public plot_id!: number;
-  public crop_id!: number;
   public date!: Date;
   public pesticide_type!: string;
   public quantity!: number;
@@ -23,14 +22,6 @@ Pesticide.init(
       allowNull: false,
       references: {
         model: "plots",
-        key: "id",
-      }
-    },
-    crop_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: "crops",
         key: "id",
       }
     },
