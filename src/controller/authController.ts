@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { BaseController } from "./basecontrotller";
+import { BaseController } from "./basecontroller";
 import { User } from "../models";
 import sequelize from "../config/sequelize";
 import { AuthUser } from "../middleware/auth";

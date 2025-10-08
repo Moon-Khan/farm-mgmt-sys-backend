@@ -37,18 +37,20 @@ Reminder.init(
     plot_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      references: {
-        model: 'plots',
-        key: 'id',
-      },
+      // Temporarily comment out references to avoid constraint issues
+      // references: {
+      //   model: 'plots',
+      //   key: 'id',
+      // },
     },
     crop_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      references: {
-        model: 'crops',
-        key: 'id',
-      },
+      // Temporarily comment out references to avoid constraint issues
+      // references: {
+      //   model: 'crops',
+      //   key: 'id',
+      // },
     },
     type: {
       type: DataTypes.ENUM('watering', 'fertilizer', 'spray', 'harvest'),

@@ -1,5 +1,5 @@
 // controllers/CropController.ts
-import { BaseController } from "./basecontrotller";
+import { BaseController } from "./basecontroller";
 import CropService from "../helpers/cropService";
 import { Request, Response } from "express";
 import caretakerService from "../helpers/caretakerService";

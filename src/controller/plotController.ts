@@ -1,4 +1,4 @@
-import { BaseController, HTTP_STATUS, PaginationParams } from "./basecontrotller";
+import { BaseController, HTTP_STATUS, PaginationParams } from "./basecontroller";
 import PlotService from "../helpers/plotService";
 import { Request, Response } from "express";
 
@@ -13,7 +13,7 @@ class PlotController extends BaseController {
             const pagination: any = this.getPaginationParams(req);
             const filters = {
                 status: req.query.status as string,
-                caretaker_id: req.query.caretaker_id ? parseInt(req.query.caretaker_id as string) : undefined,
+                caretaker_name: req.query.caretaker_name as string, // Changed from caretaker_id to caretaker_name
                 current_crop_id: req.query.current_crop_id ? parseInt(req.query.current_crop_id as string) : undefined
             };
 
@@ -91,6 +91,8 @@ class PlotController extends BaseController {
     // Create new plot
     async createPlot(req: Request, res: Response): Promise<void> {
         try {
+
+            console.log("===================> Creating plot...");
             const plotData = {
                 ...req.body,
                 user_id: req.user?.id // Add the authenticated user's ID (optional for now)

@@ -5,7 +5,8 @@ class CropService {
     async getAllCrops(): Promise<ServiceResponse<Crop[]>> {
         try {
             const crops = await Crop.findAll({
-                attributes: ["id", "name"]
+                attributes: ["id", "name", "name_urdu"],
+                order: [['name', 'ASC']]
             });
 
             return {

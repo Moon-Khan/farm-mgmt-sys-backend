@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { BaseController } from "./basecontrotller";
+import { BaseController } from "./basecontroller";
 
 class WeatherController extends BaseController {
   // GET /v1/weather?lat=..&lon=.. OR ?city=..
