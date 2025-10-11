@@ -71,6 +71,31 @@ class NotificationService {
     `;
     await this.sendEmail({ to, subject, text, html });
   }
+
+  async sendIrrigationNotification(irrigation: any, toEmail?: string): Promise<void> {
+    const toCandidate = toEmail || process.env.NOTIFY_EMAIL;
+    if (!toCandidate) {
+      throw new Error(
+        "Recipient email is missing. Provide 'toEmail' or set 'NOTIFY_EMAIL' in environment."
+      );
+    }
+    const to = toCandidate; // now a definite string
+    const subject = `Irrigation Scheduled for Plot #${irrigation.plot_id}`;
+    const when = new Date(irrigation.date).toLocaleString();
+    const quantity = irrigation.quantity || 'Not specified';
+    const weatherAdjusted = irrigation.weather_adjusted ? 'Yes' : 'No';
+    const text = `Irrigation has been scheduled.\n\nPlot: ${irrigation.plot_id}\nQuantity: ${quantity}L\nDate: ${when}\nWeather Adjusted: ${weatherAdjusted}`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height:1.5;">
+        <h3>Irrigation Scheduled</h3>
+        <p><strong>Plot:</strong> ${irrigation.plot_id}</p>
+        <p><strong>Quantity:</strong> ${quantity}L</p>
+        <p><strong>Date:</strong> ${when}</p>
+        <p><strong>Weather Adjusted:</strong> ${weatherAdjusted}</p>
+      </div>
+    `;
+    await this.sendEmail({ to, subject, text, html });
+  }
 }
 
 export default new NotificationService();

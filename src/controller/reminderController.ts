@@ -118,7 +118,7 @@ class ReminderController extends BaseController {
     async markAsDone(req: Request, res: Response): Promise<void> {
         try {
             const { reminderId } = req.params;
-            const result = await ReminderService.markAsDone(Number(reminderId));
+            const result = await ReminderService.markReminderAsDone(Number(reminderId));
 
             if (result.success && result.data) {
                 this.success(
