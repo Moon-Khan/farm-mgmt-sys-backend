@@ -14,13 +14,13 @@ class WeatherController extends BaseController {
         url = presetUrl;
       } else {
         // Construct URL using OpenWeather REST if preset not provided
-        const apiKey = process.env.OPENWEATHER_API_KEY;
+        const apiKey = process.env.WEATHER_API;
         if (!apiKey) {
           return this.error(
             req,
             res,
             this.status.SERVICE_UNAVAILABLE,
-            "Weather service not configured: provide WEATHER_API or OPENWEATHER_API_KEY"
+            "Weather service not configured: provide WEATHER_API or WEATHER_API_KEY"
           );
         }
 

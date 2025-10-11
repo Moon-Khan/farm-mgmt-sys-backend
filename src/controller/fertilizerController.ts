@@ -61,6 +61,7 @@ class FertilizerController extends BaseController {
     // Create new fertilizer record
     async createFertilizer(req: Request, res: Response): Promise<void> {
         try {
+            
             const result = await FertilizerService.createFertilizer(req.body);
 
             if (result.success && result.data) {

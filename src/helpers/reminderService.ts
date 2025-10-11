@@ -7,7 +7,7 @@ interface ReminderData {
   crop_id: number;
   type: 'watering' | 'fertilizer' | 'spray' | 'harvest';
   due_date: Date;
-  method: 'SMS' | 'Email' | 'WhatsApp';
+  method:'Email';
 }
 
 class ReminderService {
@@ -101,7 +101,7 @@ class ReminderService {
         }
     }
 
-    async markAsDone(reminderId: number): Promise<ServiceResponse<Reminder>> {
+    async markReminderAsDone(reminderId: number): Promise<ServiceResponse<Reminder>> {
         try {
             const reminder = await Reminder.findByPk(reminderId);
             if (!reminder) {
@@ -119,7 +119,7 @@ class ReminderService {
                 data: reminder
             };
         } catch (error) {
-            console.error("Error in ReminderService.markAsDone:", error);
+            console.error("Error in ReminderService.markReminderAsDone:", error);
             return {
                 success: false,
                 errors: [error]
@@ -130,39 +130,52 @@ class ReminderService {
     async generateWeeklyReminders(): Promise<ServiceResponse<Reminder[]>> {
         try {
             const createdReminders: Reminder[] = [];
-            
-            // Get all non-harvested plots that have a current crop set
+
+            // Get all active plots with crops
             const { Plot, Crop } = await import('../models');
             const activePlots = await Plot.findAll({
                 where: {
-                    // Support both legacy 'Active' and new statuses
-                    status: { [Op.in]: ['planting','harvested', 'growing'] },
-                    current_crop_id: { [Op.not]: null },
+                    status: { [Op.in]: ['growing', 'planting'] },
+                    current_crop_id: { [Op.not]: null }
                 }
             });
 
             for (const plot of activePlots) {
-                // Fetch crop by foreign key to avoid alias issues
                 const cropId = (plot as any).current_crop_id;
                 if (!cropId) continue;
+
                 const crop = await Crop.findByPk(cropId);
                 if (!crop) continue;
 
-                // Generate reminders based on crop type and typical schedule
-                const reminders = this.generateCropReminders(plot.id, crop.id, (crop as any).name);
-                
-                for (const reminderData of reminders) {
+                // Create simple weekly reminders for next 7 days
+                const nextWeekDate = new Date();
+                nextWeekDate.setDate(nextWeekDate.getDate() + 7);
+
+                // Create one reminder per activity type for the coming week
+                const activities = ['watering', 'fertilizer', 'spray'] as const;
+
+                for (const activity of activities) {
                     const existingReminder = await Reminder.findOne({
                         where: {
-                            plot_id: reminderData.plot_id,
-                            crop_id: reminderData.crop_id,
-                            type: reminderData.type,
-                            due_date: reminderData.due_date
+                            plot_id: plot.id,
+                            crop_id: cropId,
+                            type: activity,
+                            due_date: {
+                                [Op.gte]: new Date(),
+                                [Op.lte]: nextWeekDate
+                            }
                         }
                     });
 
                     if (!existingReminder) {
-                        const reminder = await Reminder.create(reminderData);
+                        const reminder = await Reminder.create({
+                            plot_id: plot.id,
+                            crop_id: cropId,
+                            type: activity,
+                            due_date: nextWeekDate,
+                            method: 'Email',
+                            sent: false
+                        });
                         createdReminders.push(reminder);
                     }
                 }
@@ -179,63 +192,6 @@ class ReminderService {
                 errors: [error]
             };
         }
-    }
-
-    private generateCropReminders(plotId: number, cropId: number, cropName: string): ReminderData[] {
-        const reminders: ReminderData[] = [];
-        const today = new Date();
-        
-        // Generate reminders for the next week
-        for (let i = 1; i <= 7; i++) {
-            const date = new Date(today);
-            date.setDate(today.getDate() + i);
-
-            // Watering reminders (every 2-3 days for most crops)
-            if (i % 2 === 0) {
-                reminders.push({
-                    plot_id: plotId,
-                    crop_id: cropId,
-                    type: 'watering',
-                    due_date: date,
-                    method: 'Email'
-                });
-            }
-
-            // Fertilizer reminders (weekly)
-            if (i === 3) {
-                reminders.push({
-                    plot_id: plotId,
-                    crop_id: cropId,
-                    type: 'fertilizer',
-                    due_date: date,
-                    method: 'Email'
-                });
-            }
-
-            // Spray/pesticide reminders (weekly)
-            if (i === 5) {
-                reminders.push({
-                    plot_id: plotId,
-                    crop_id: cropId,
-                    type: 'spray',
-                    due_date: date,
-                    method: 'Email'
-                });
-            }
-
-            // Harvest reminders (for crops near harvest time)
-            if (cropName.toLowerCase().includes('tomato') && i === 7) {
-                reminders.push({
-                    plot_id: plotId,
-                    crop_id: cropId,
-                    type: 'harvest',
-                    due_date: date,
-                    method: 'Email'
-                });
-            }
-        }
-
-        return reminders;
     }
 }
 
