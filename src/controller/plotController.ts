@@ -88,14 +88,20 @@ class PlotController extends BaseController {
         }
     }
 
-    // Create new plot
+    // Create a new plot
     async createPlot(req: Request, res: Response): Promise<void> {
         try {
-
-            console.log("===================> Creating plot...");
             const plotData = {
-                ...req.body,
-                user_id: req.user?.id // Add the authenticated user's ID (optional for now)
+                name: req.body.name,
+                acreage: req.body.acreage,
+                caretaker_name: req.body.caretaker_name,
+                current_crop_id: req.body.current_crop_id,
+                status: req.body.status,
+                planted_date: req.body.planted_date,
+                expected_harvest_date: req.body.expected_harvest_date,
+                seed_variety: req.body.seed_variety,
+                seed_quantity: req.body.seed_quantity,
+                user_id: req.user?.id // Add user ID from auth
             };
 
             const result = await PlotService.createPlot(plotData);
@@ -106,7 +112,7 @@ class PlotController extends BaseController {
                     res,
                     this.status.CREATED,
                     result.data,
-                    result.message || "Plot created successfully"
+                    "Plot created successfully"
                 );
             } else {
                 this.error(
@@ -121,17 +127,23 @@ class PlotController extends BaseController {
         }
     }
 
-    // Update plot
+    // Update an existing plot
     async updatePlot(req: Request, res: Response): Promise<void> {
         try {
-            const id = parseInt(req.params.id);
-            
-            if (isNaN(id)) {
-                this.error(req, res, this.status.BAD_REQUEST, "Invalid plot ID");
-                return;
-            }
+            const { id } = req.params;
+            const updateData = {
+                name: req.body.name,
+                acreage: req.body.acreage,
+                caretaker_name: req.body.caretaker_name,
+                current_crop_id: req.body.current_crop_id,
+                status: req.body.status,
+                planted_date: req.body.planted_date,
+                expected_harvest_date: req.body.expected_harvest_date,
+                seed_variety: req.body.seed_variety,
+                seed_quantity: req.body.seed_quantity
+            };
 
-            const result = await PlotService.updatePlot(id, req.body);
+            const result = await PlotService.updatePlot(Number(id), updateData);
 
             if (result.success && result.data) {
                 this.success(
@@ -139,13 +151,13 @@ class PlotController extends BaseController {
                     res,
                     this.status.OK,
                     result.data,
-                    result.message || "Plot updated successfully"
+                    "Plot updated successfully"
                 );
             } else {
                 this.error(
                     req,
                     res,
-                    result.message?.includes("not found") ? this.status.NOT_FOUND : this.status.BAD_REQUEST,
+                    result.message?.includes('not found') ? this.status.NOT_FOUND : this.status.BAD_REQUEST,
                     result.message || "Failed to update plot"
                 );
             }
