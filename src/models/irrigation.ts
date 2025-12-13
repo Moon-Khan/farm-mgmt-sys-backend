@@ -5,7 +5,7 @@ class Irrigation extends Model {
   public id!: number;
   public plot_id!: number;
   public date!: Date;
-  public quantity!: number;
+  public notes?: string;
 }
 
 Irrigation.init(
@@ -27,9 +27,9 @@ Irrigation.init(
       type: DataTypes.DATE,
       allowNull: false,
     },
-    quantity: {
-      type: DataTypes.DECIMAL(10, 2),
-      allowNull: false,
+    notes: {
+      type: DataTypes.TEXT,
+      allowNull: true,
     },
   },
   {
