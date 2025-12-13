@@ -13,6 +13,8 @@ class Plot extends Model {
   public planted_date?: Date;
   public expected_harvest_date?: Date;
   public is_active!: boolean; // Soft delete field
+  public seed_variety?: string;
+  public seed_quantity?: number;
 
   // Relationship properties
   public current_crop?: any;
@@ -56,6 +58,14 @@ Plot.init(
     },
     expected_harvest_date: {
       type: DataTypes.DATE,
+      allowNull: true,
+    },
+    seed_variety: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    seed_quantity: {
+      type: DataTypes.DECIMAL(10, 2),
       allowNull: true,
     },
     user_id: {

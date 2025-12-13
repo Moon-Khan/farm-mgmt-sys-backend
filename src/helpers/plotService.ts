@@ -137,19 +137,24 @@ class PlotService {
         caretaker_name: string; // Changed from caretaker_id to caretaker_name
         current_crop_id: number;
         status: string;
-        planted_date?: string; // Added planted date
-        expected_harvest_date?: string; // Added expected harvest date
+        planted_date?: string | null; // Added planted date
+        expected_harvest_date?: string | null; // Added expected harvest date
+        seed_variety?: string | null;
+        seed_quantity?: number | null;
         user_id?: number;
     }): Promise<ServiceResponse<Plot>> {
         try {
-            // Validate required fields
-            if (!plotData.name || !plotData.acreage || !plotData.caretaker_name || !plotData.current_crop_id) {
+            // Ensure required fields are present
+            if (!plotData.name || !plotData.acreage || !plotData.caretaker_name) {
                 return {
                     success: false,
-                    message: "Missing required fields: name, acreage, caretaker_name, current_crop_id"
+                    message: 'Name, acreage, and caretaker name are required',
                 };
             }
-
+            
+            // Convert empty strings to undefined for optional fields
+            if (plotData.seed_variety === '') plotData.seed_variety = undefined;    
+            if (plotData.seed_quantity === null || plotData.seed_quantity === undefined) plotData.seed_quantity = undefined;
             // Validate acreage is positive
             if (plotData.acreage <= 0) {
                 return {

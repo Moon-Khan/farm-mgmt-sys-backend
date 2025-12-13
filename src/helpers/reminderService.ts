@@ -147,11 +147,18 @@ class ReminderService {
                 const crop = await Crop.findByPk(cropId);
                 if (!crop) continue;
 
-                // Create simple weekly reminders for next 7 days
+                // Calculate next Wednesday and next week's date
+                const today = new Date();
+                const nextWednesday = new Date(today);
+                const daysUntilWednesday = (3 - today.getDay() + 7) % 7 || 7; // 3 is Wednesday (0 = Sunday)
+                nextWednesday.setDate(today.getDate() + daysUntilWednesday);
+                nextWednesday.setHours(9, 0, 0, 0); // Set to 9 AM
+                
+                // For non-watering reminders, use a 7-day window
                 const nextWeekDate = new Date();
-                nextWeekDate.setDate(nextWeekDate.getDate() + 7);
+                nextWeekDate.setDate(today.getDate() + 7);
 
-                // Create one reminder per activity type for the coming week
+                // Create one reminder per activity type
                 const activities = ['watering', 'fertilizer', 'spray'] as const;
 
                 for (const activity of activities) {
@@ -160,10 +167,9 @@ class ReminderService {
                             plot_id: plot.id,
                             crop_id: cropId,
                             type: activity,
-                            due_date: {
-                                [Op.gte]: new Date(),
-                                [Op.lte]: nextWeekDate
-                            }
+                            due_date: activity === 'watering' 
+                                ? { [Op.between]: [nextWednesday, new Date(nextWednesday.getTime() + 24 * 60 * 60 * 1000)] }
+                                : { [Op.between]: [new Date(), nextWeekDate] }
                         }
                     });
 
@@ -172,7 +178,7 @@ class ReminderService {
                             plot_id: plot.id,
                             crop_id: cropId,
                             type: activity,
-                            due_date: nextWeekDate,
+                            due_date: activity === 'watering' ? nextWednesday : nextWeekDate,
                             method: 'Email',
                             sent: false
                         });
